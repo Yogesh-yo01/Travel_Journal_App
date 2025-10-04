@@ -6,6 +6,8 @@ import { NavigationContainer } from '@react-navigation/native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashScreen from './src/SplashScreen/SplashScreen';
+import Login from './src/LoginScreen/Login';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Stack = createStackNavigator();
 const App = () => {
@@ -16,7 +18,7 @@ const App = () => {
 
   useEffect(() => {
     setTimeout(() => {
-      setSplashVisible(false);
+      // setSplashVisible(false);
     }, 2050);
     AsyncStorage.getItem('alreadyLaunched').then(value => {
       if (value === null) {
@@ -31,13 +33,21 @@ const App = () => {
   }, []);
   if (splashVisible) {
     return (
-      <SplashScreen/>
+      <SplashScreen />
     );
   }
   return (
-    <View>
-      <Text>App.js</Text>
-    </View>
+    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+      <NavigationContainer >
+        <Stack.Navigator initialRouteName={
+          isLoggedIn ?
+            profileSetup ? 'TabNavigation' : 'MyDetails'
+            : 'Login'
+        }>
+          <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaView>
   )
 }
 
