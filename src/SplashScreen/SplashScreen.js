@@ -6,8 +6,12 @@ const SplashScreen = () => {
     return (
         <View style={styles.container}>
             <StatusBar translucent backgroundColor='transparent' />
-            <Image source={AppLogo} style={{ width: 200, height: 200 }} />
-            <Text style={{ fontSize: 20, color: Colors.primary_007bff }}>Travel Journal</Text>
+            <View style={styles.body}>
+                <Image source={AppLogo} style={{ width: 200, height: 200 }} />
+                <Text style={styles.title}>Travel Journal</Text>
+            </View>
+            <Text style={styles.tagline}>Capture your journeys, even offline</Text>
+
         </View>
     )
 }
@@ -19,11 +23,22 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: Colors.white_fffff,
+        backgroundColor: Colors.blue_E0E9FB,
+    },
+    body: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     title: {
-        fontSize: Size.md_20,
-        color: Colors.primary_007bff,
+        fontSize: Size.lg_30,
+        color: Colors.Black_000000,
         fontFamily: Fonts.bold,
+    },
+    tagline: {
+        fontSize: Size.md_16,
+        color: Colors.gray,
+        fontFamily: Fonts.regularAS,
+        bottom:20
     }
 })

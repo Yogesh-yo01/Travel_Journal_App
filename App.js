@@ -8,6 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashScreen from './src/SplashScreen/SplashScreen';
 import Login from './src/LoginScreen/Login';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TabNavigation from './src/TabNavigation/TabNavigation';
+import AddNew from './src/HomeScreen/AddNew';
 
 const Stack = createStackNavigator();
 const App = () => {
@@ -18,7 +20,7 @@ const App = () => {
 
   useEffect(() => {
     setTimeout(() => {
-      // setSplashVisible(false);
+      setSplashVisible(false);
     }, 2050);
     AsyncStorage.getItem('alreadyLaunched').then(value => {
       if (value === null) {
@@ -29,8 +31,24 @@ const App = () => {
       }
     });
     // getFCMToken();
-    // checkLoginStatus();
+    checkLoginStatus();
   }, []);
+  const checkLoginStatus = async () => {
+    try {
+      const AlreadyLogIn = await AsyncStorage.getItem('logedin');
+      setIsLoggedIn(AlreadyLogIn == null ? false : true);
+
+      // const Profilesetup = await AsyncStorage.getItem('setup');
+      // setProfilesetup(Profilesetup == null ? false : true);
+
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      // console.log('====================================');
+      console.log('>==[ AccessToken In App.js]==>:', accessToken);
+      // console.log('====================================');
+    } catch (error) {
+      console.error('Error checking login status:', error);
+    }
+  };
   if (splashVisible) {
     return (
       <SplashScreen />
@@ -39,12 +57,12 @@ const App = () => {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <NavigationContainer >
-        <Stack.Navigator initialRouteName={
-          isLoggedIn ?
-            profileSetup ? 'TabNavigation' : 'MyDetails'
-            : 'Login'
-        }>
-          <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+        <Stack.Navigator initialRouteName={isLoggedIn ? 'TabNavigation' : 'Login'}>
+
+          <Stack.Screen name="Login" component={Login} options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="TabNavigation" component={TabNavigation} options={{ headerShown: false, animation: 'fade' }} />
+
+          <Stack.Screen name="AddNew" component={AddNew} options={{ headerShown: false, animation: 'fade' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
