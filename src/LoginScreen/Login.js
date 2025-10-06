@@ -1,15 +1,66 @@
-import { Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import { ActivityIndicator, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
 import { Colors, Fonts, Size } from '../Theme/Theme'
 import GoogleLogo from '../../assets/login/google.png'
 import AppleLogo from '../../assets/login/apple.png'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-const Login = ({ navigation }) => {
 
-  const handleLogin = async () => {
-    console.log('Login pressed')
-    await AsyncStorage.setItem('logedin', 'true');
-    navigation.navigate('TabNavigation')
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import auth, { signOut } from "@react-native-firebase/auth";
+
+
+const Login = ({ navigation }) => {
+  const [googleBtnLoading, setGoogleBtnLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleBtnLoading(true);
+    try {
+      console.log("Google Login pressed");
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      const userData = await GoogleSignin.signIn();
+      console.log("Id Token:", userData)
+      // Create a Google credential with the token
+      const googleCredential = auth.GoogleAuthProvider.credential(userData.data.idToken);
+
+      const userCredential = await auth().signInWithCredential(googleCredential);
+
+      console.log("User signed in:", userCredential.user);
+
+      // 5. Store login status / user data
+      await AsyncStorage.setItem("logedin", "true");
+
+      // 6. Navigate
+      navigation.replace("TabNavigation");
+      return userCredential;
+    } catch (error) {
+      console.error("Google Login error:", error);
+    } finally {
+      setGoogleBtnLoading(false);
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    try {
+      // Firebase sign out
+      await signOut(auth());
+
+      // Google sign out
+      await GoogleSignin.signOut();
+      await GoogleSignin.revokeAccess();
+      await AsyncStorage.removeItem("logedin");
+      console.log("User logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    handleGoogleLogout();
+    // console.log('Apple Login pressed')
+    // await AsyncStorage.setItem('logedin', 'true');
+    // navigation.navigate('TabNavigation')
   }
   return (
     <View style={styles.container}>
@@ -20,15 +71,15 @@ const Login = ({ navigation }) => {
         <Text style={styles.tagline}>Capture your adventures and memories</Text>
         {/* Login Buttons */}
         <View style={styles.LoginContainer}>
-          <TouchableOpacity style={styles.GoogleButton} onPress={handleLogin}>
+          <TouchableOpacity style={styles.GoogleButton} onPress={handleGoogleLogin}>
             <Image source={GoogleLogo} style={styles.GoogleLogo} />
-            <Text style={styles.GoogleText}>Continue with Google</Text>
+            {googleBtnLoading ? <ActivityIndicator color={Colors.gray} size={20} /> : <Text style={styles.GoogleText}>Continue with Google</Text>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.AppleButton} onPress={handleLogin}>
+          <TouchableOpacity style={styles.AppleButton} onPress={handleAppleLogin}>
             <Image source={AppleLogo} style={styles.AppleLogo} />
             <Text style={styles.AppleText}>Continue with Apple</Text>
           </TouchableOpacity>
-          
+
           <Text style={styles.footerNote}>
             By continuing, you agree to our Terms & Privacy Policy
           </Text>

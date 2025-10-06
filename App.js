@@ -21,9 +21,11 @@ const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
   const [profileSetup, setProfilesetup] = useState(false);
+
   GoogleSignin.configure({
     webClientId: "405631334017-9ru195b994ghb3jodn6tepdgj63j475t.apps.googleusercontent.com", // from Firebase
   });
+
   useEffect(() => {
     setTimeout(() => {
       setSplashVisible(false);
