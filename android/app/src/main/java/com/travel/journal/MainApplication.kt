@@ -1,4 +1,4 @@
-package com.travel_journal
+package com.travel.journal
 
 import android.app.Application
 import com.facebook.react.PackageList
