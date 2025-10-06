@@ -18,19 +18,28 @@ import RNFS from "react-native-fs";
 import { GOOGLE_MAPS_API_KEY } from '@env';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-const AddNew = ({ navigation }) => {
+import NetInfo from '@react-native-community/netinfo';
+// import uuid from 'react-native-uuid';
+import { insertJournal, updateJournal, updateJournalSync } from '../DB/database'
+import { supabase } from '../DB/supabaseClient'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+const AddNew = ({ navigation, route }) => {
+    const { journal } = route.params || {};
+
+    const [searchText, setSearchText] = useState('');
     const [newJournalData, setNewJournalData] = useState({
-        title: '',
-        description: '',
-        photos: [],
-        date: new Date(),
-        location: '',
-        tags: [],
+        title: journal?.title || '',
+        description: journal?.description || '',
+        photos: journal?.photos || [],
+        date: new Date().getTime(),
+        location: journal?.location || searchText || '',
+        tags: journal?.tags || [],
     });
+
     const [showModal, setShowModal] = useState(false);
     const [aiTags, setAiTags] = useState([]);
     const [aiTagsLoading, setAiTagsLoading] = useState(false);
-    const [searchText, setSearchText] = useState('');
     const [searchResults, setSearchResults] = useState([]);
 
     // from Clarifai portal
@@ -132,7 +141,47 @@ const AddNew = ({ navigation }) => {
                 : [...newJournalData.tags, tag],
         });
     }
+    const saveJournal = async () => {
+        const user = JSON.parse(await AsyncStorage.getItem('user'));
+        const user_id = user?.uid;
+        const journalData = {
+            ...newJournalData,
+            id: journal?.id || Date.now().toString(),
+            user_id,
+            synced: false
+        };
 
+        if (journal) {
+            // Update existing journal
+            await updateJournal(journalData);
+
+        } else {
+            // Insert new journal
+            await insertJournal(journalData);
+        }
+
+        // Clear form & go back
+        setNewJournalData({
+            title: '',
+            description: '',
+            photos: [],
+            location: null,
+            tags: [],
+        });
+        if (journal) {
+            navigation.navigate('TabNavigation',);
+        } else {
+            navigation.goBack();
+        }
+    };
+
+    const isFormValid = () => {
+        return newJournalData.title.trim() !== '' &&
+            newJournalData.description.trim() !== '' &&
+            newJournalData.photos.length > 0 &&
+            newJournalData.location !== null &&
+            newJournalData.tags.length > 0;
+    }
     return (
         <View style={styles.container}>
 
@@ -158,7 +207,7 @@ const AddNew = ({ navigation }) => {
                     />
                     <Text style={styles.InputLabel}>Description</Text>
                     <TextInput
-                        style={[styles.InputField, { height: 60, textAlignVertical: 'top' }]}
+                        style={[styles.InputField, { height: 100, textAlignVertical: 'top' }]}
                         numberOfLines={3}
                         multiline
                         placeholder='Write about your experience...'
@@ -200,24 +249,11 @@ const AddNew = ({ navigation }) => {
                             style={styles.LocationInput}
                             placeholder='Add Location...'
                             placeholderTextColor={Colors.placeholder}
-                            onChangeText={(text) => {
-                                // Store the search text in state
-                                if (!searchText) {
-                                    setSearchText(text);
-                                } else {
-                                    setSearchText(text);
-                                    // Only search if text is 3 or more characters
-                                    if (text.length >= 2) {
-                                        searchLocations(text);
-                                    } else {
-                                        setSearchResults([]);
-                                    }
-                                }
-                            }}
-                            value={searchText}
+                            onChangeText={(text) => handleAddNewJournal('location', text)}
+                            value={newJournalData.location}
                         />
                     </View>
-                    {newJournalData.photos.length > 0 && <View style={styles.TagsLabelContainer}>
+                    {(journal === undefined && newJournalData.photos.length > 0) && <View style={styles.TagsLabelContainer}>
                         <Text style={[styles.InputLabel,]}>Ai-Generated Tags</Text>
                         <Image source={AiIcon} resizeMode="stretch" style={styles.AiIcon} />
                     </View>}
@@ -236,6 +272,11 @@ const AddNew = ({ navigation }) => {
 
                 </View>
             </KeyboardAwareScrollView>
+            <View style={styles.FooterContainer}>
+                <TouchableOpacity disabled={!isFormValid()} style={[styles.SaveButton, !isFormValid() && styles.DisableButton]} onPress={saveJournal}>
+                    <Text style={styles.SaveButtonText}>{journal?.id ? 'Update Journal' : 'Add Journal'}</Text>
+                </TouchableOpacity>
+            </View>
             <ChooseModal
                 showModal={showModal}
                 setShowModal={setShowModal}
@@ -458,5 +499,28 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.medium,
         backgroundColor: Colors.blue_bg_F2F8FF,
 
+    },
+    FooterContainer: {
+        width: "100%",
+        paddingHorizontal: 16,
+        paddingVertical: 20,
+        backgroundColor: Colors.white_fffff,
+        elevation: 4,
+    },
+    SaveButton: {
+        width: "100%",
+        height: 40,
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: Colors.primary,
+    },
+    DisableButton: {
+        backgroundColor: Colors.placeholder,
+    },
+    SaveButtonText: {
+        fontSize: Size.md_16,
+        color: Colors.white_fffff,
+        fontFamily: Fonts.medium,
     }
 })

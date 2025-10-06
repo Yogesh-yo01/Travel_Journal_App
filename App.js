@@ -13,6 +13,8 @@ import AddNew from './src/HomeScreen/AddNew';
 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
+import { initDB } from './src/DB/database';
+import JournalDetails from './src/HomeScreen/JournalDetails';
 
 
 const Stack = createStackNavigator();
@@ -25,6 +27,18 @@ const App = () => {
   GoogleSignin.configure({
     webClientId: "405631334017-9ru195b994ghb3jodn6tepdgj63j475t.apps.googleusercontent.com", // from Firebase
   });
+  useEffect(() => {
+    const setupDatabase = async () => {
+      try {
+        await initDB();
+        console.log('SQLite Database Initialized');
+      } catch (err) {
+        console.error('Error initializing database:', err);
+      }
+    };
+
+    setupDatabase();
+  }, []);
 
   useEffect(() => {
     setTimeout(() => {
@@ -69,8 +83,8 @@ const App = () => {
 
           <Stack.Screen name="Login" component={Login} options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="TabNavigation" component={TabNavigation} options={{ headerShown: false, animation: 'fade' }} />
-
           <Stack.Screen name="AddNew" component={AddNew} options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="JournalDetails" component={JournalDetails} options={{ headerShown: false, animation: 'fade' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>

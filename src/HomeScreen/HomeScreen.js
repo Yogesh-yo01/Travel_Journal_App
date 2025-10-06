@@ -1,5 +1,7 @@
-import { FlatList, Image, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React, { useState } from 'react'
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/no-unstable-nested-components */
+import { FlatList, Image, RefreshControl, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Colors, Fonts, Size } from '../Theme/Theme'
 import moment from 'moment'
 import SearchIcon from '../../assets/icon/searchGrey.svg'
@@ -9,19 +11,32 @@ import TimeIcon from '../../assets/icon/time.svg'
 import BackIcon from '../../assets/icon/backb.svg'
 import FilterIcon from '../../assets/icon/filter.svg'
 import AddIcon from '../../assets/icon/add.svg'
+import EmptyIcon from '../../assets/icon/empty.svg'
 
 
+import NetInfo from '@react-native-community/netinfo';
 import Filter from './Filter'
+import { getOfflineJournals, getOfflineJournalsByUser, updateJournalSync } from '../DB/database'
+import { supabase } from '../DB/supabaseClient'
+import { syncJournals } from '../DB/sync'
+import Toast from 'react-native-simple-toast'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useFocusEffect } from '@react-navigation/native'
 
 const HomeScreen = ({ navigation }) => {
+    const [allJournals, setAllJournals] = useState([]); // full data from DB
+    const [displayedJournals, setDisplayedJournals] = useState([]); // filtered view
     const [isSearchVisible, setIsSearchVisible] = useState(false)
     const [isFilterVisible, setIsFilterVisible] = useState(false)
     const [loading, setLoading] = useState(true)
     const [searchText, setSearchText] = useState('')
+    const [refreshing, setRefreshing] = useState(false)
     const [filteredData, setFilteredData] = useState({
         range: 'All',
         tags: [],
     })
+    const [journals, setJournals] = useState([])
+
     const DateRange = [
         { range: 'All' },
         { range: 'Today' },
@@ -29,46 +44,104 @@ const HomeScreen = ({ navigation }) => {
         { range: 'This Month' },
         { range: 'This Year' },
     ]
+    // Extract all tags dynamically if you already have journals stored
+    const allJournalTags = journals.reduce((acc, journal) => {
+        journal.tags.forEach(tag => {
+            if (!acc.includes(tag)) acc.push(tag);
+        });
+        return acc;
+    }, []);
+
+    // Prepare the Tags array for the filter
     const Tags = [
         { tag: 'All' },
-        { tag: 'City' },
-        { tag: 'Landmarks' },
-        { tag: 'History' },
-        { tag: 'Beautiful' },
-        { tag: 'Big Buildings' },
-    ]
+        ...allJournalTags.map(tag => ({ tag })),
+    ];
 
-    const data = [
-        {
-            id: 1,
-            title: '36 Hours in New York',
-            Description: 'A 36-hour journey through the city of New York, exploring its iconic landmarks and hidden gems.',
-            Photos: [
-                'https://cdn.contexttravel.com/image/upload/w_1500,q_60/v1571947279/blog/36%20Hours%20in%20NYC/NewYorkStreets.jpg',
-                'https://a.travel-assets.com/findyours-php/viewfinder/images/res70/506000/506237-times-square.jpg',
-            ],
-            createdAt: Date.now(),
-            location: 'New York',
-            tags: ['New York', 'City', 'Landmarks', 'History', 'Beautiful', 'Big Buildings'],
-        },
-        {
-            id: 2,
-            title: 'Capital and Largest city of France',
-            Description: 'famous for its iconic landmarks like the Eiffel Tower',
-            Photos: [
-                'https://img.freepik.com/free-photo/beautiful-wide-shot-eiffel-tower-paris-surrounded-by-water-with-ships-colorful-sky_181624-5118.jpg?semt=ais_hybrid&w=740&q=80',
-                'https://images.unsplash.com/photo-1583265266785-aab9e443ee68?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8cGFyaXMlMkMlMjBmcmFuY2V8ZW58MHx8MHx8fDA%3D',
-            ],
-            createdAt: Date.now(),
-            location: 'Paris',
-            tags: ['Paris', 'City', 'Landmarks'],
-        },
+    const applyFilters = () => {
+        let filtered = [...journals]; // start from your stored journals
 
-    ]
+        // Filter by search text (title & description)
+        if (searchText.trim() !== '') {
+            const lowerText = searchText.toLowerCase();
+            filtered = filtered.filter(journal =>
+                journal.title.toLowerCase().includes(lowerText) ||
+                journal.description.toLowerCase().includes(lowerText)
+            );
+        }
+
+        // Filter by tags
+        if (filteredData.tags && filteredData.tags.length > 0 && !filteredData.tags.includes('All')) {
+            filtered = filtered.filter(journal =>
+                journal.tags.some(tag => filteredData.tags.includes(tag))
+            );
+        }
+
+        // Filter by date range
+        if (filteredData.range && filteredData.range !== 'All') {
+            const now = new Date();
+            filtered = filtered.filter(journal => {
+                const journalDate = new Date(Number(journal.date)); // convert timestamp
+                if (filteredData.range === 'Today') {
+                    return journalDate.toDateString() === now.toDateString();
+                } else if (filteredData.range === 'Yesterday') {
+                    const yesterday = new Date();
+                    yesterday.setDate(now.getDate() - 1);
+                    return journalDate.toDateString() === yesterday.toDateString();
+                } else if (filteredData.range === 'Last 7 Days') {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(now.getDate() - 7);
+                    return journalDate >= weekAgo && journalDate <= now;
+                }
+                return true;
+            });
+        }
+
+        setDisplayedJournals(filtered);
+    };
+    useEffect(() => {
+        applyFilters();
+    }, [searchText, filteredData, journals]);
+
+    const GetJournalData = async () => {
+        try {
+            const user = JSON.parse(await AsyncStorage.getItem('user'));
+            const user_id = user?.uid;
+
+            const journals = await getOfflineJournalsByUser(user_id);
+            console.log('User journals:', journals);
+            setJournals(journals);
+        } catch (error) {
+            console.error('Error fetching journals:', error);
+        }
+    };
+    useFocusEffect(useCallback(() => {
+        GetJournalData();
+    }, []))
+
     const handleBack = () => {
         setIsSearchVisible(false)
         setIsFilterVisible(false);
     }
+    const handleRefreshToSync = async () => {
+        const state = await NetInfo.fetch();
+        // Check if online
+        if (state.isConnected) {
+            // Sync with Supabase
+            const user = JSON.parse(await AsyncStorage.getItem('user'));
+            const user_id = user?.uid;
+
+            await syncJournals(user_id);
+            Toast.show('Journals synced with Supabase.');
+        } else {
+            // Handle offline case
+            Toast.show('No internet connection. Journal saved locally.');
+            console.log('No internet connection. Journal saved locally.');
+        }
+    };
+    const handleJournalDetails = (journal) => {
+        navigation.navigate('JournalDetails', { journal });
+    };
     return (
         <View style={styles.container}>
             <StatusBar translucent backgroundColor='transparent' />
@@ -116,19 +189,25 @@ const HomeScreen = ({ navigation }) => {
                 </>
             }
             <FlatList
-                data={data}
+                data={displayedJournals}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingTop: 20, paddingHorizontal: 16 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefreshToSync}
+                    />
+                }
                 renderItem={({ item, index }) => (
-                    <View style={styles.card}>
-                        <Image source={{ uri: item.Photos[1] }} style={styles.cardImage} />
+                    <TouchableOpacity onPress={() => handleJournalDetails(item)} style={styles.card}>
+                        <Image source={{ uri: item?.photos[0] }} style={styles.cardImage} />
                         <View style={styles.cardContent}>
-                            <Text style={styles.itemTitle}>{item.title}</Text>
-                            <Text style={styles.itemDescription}>{item.Description}</Text>
+                            <Text style={styles.itemTitle}>{item?.title || 'No Title'}</Text>
+                            <Text style={styles.itemDescription}>{item?.description || 'No Description'}</Text>
                             <View style={styles.DatesContainer}>
                                 <View style={styles.Date}>
                                     <DateIcon />
-                                    <Text style={styles.itemDescription}>{moment(item?.createdAt).format('MMM D, YYYY')}</Text>
+                                    <Text style={styles.itemDescription}>{moment(Number(item?.date)).format('MMM D, YYYY')}</Text>
                                 </View>
                                 <View style={styles.Date}>
                                     <LocationIcon />
@@ -143,6 +222,15 @@ const HomeScreen = ({ navigation }) => {
                                 ))}
                             </View>
                         </View>
+                    </TouchableOpacity>
+                )}
+                ListEmptyComponent={() => (
+                    <View style={styles.EmptyContainer}>
+                        <EmptyIcon width={100} height={100} />
+                        <Text style={styles.EmptyText}>No journals found.</Text>
+                        <Text style={styles.EmptySubtitle}>
+                            You haven’t created any journals yet. Start by adding a new journal.
+                        </Text>
                     </View>
                 )}
             />
@@ -287,10 +375,29 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 48,
-        backgroundColor: Colors.white_fffff,
+        backgroundColor: Colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 0.1,
         borderColor: Colors.text_color,
+    },
+    EmptyContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        marginTop: "10%"
+    },
+    EmptyText: {
+        color: Colors.gray,
+        fontSize: Size.md_16,
+        fontFamily: Fonts.regular,
+    },
+    EmptySubtitle: {
+        color: Colors.gray,
+        fontSize: Size.sm_14,
+        fontFamily: Fonts.regular,
+        lineHeight: 20,
+        textAlign: 'center',
     }
 })

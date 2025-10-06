@@ -7,7 +7,7 @@ import AppleLogo from '../../assets/login/apple.png'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth, { signOut } from "@react-native-firebase/auth";
-
+import { supabase } from '../DB/supabaseClient'
 
 const Login = ({ navigation }) => {
   const [googleBtnLoading, setGoogleBtnLoading] = useState(false);
@@ -26,38 +26,43 @@ const Login = ({ navigation }) => {
 
       const userCredential = await auth().signInWithCredential(googleCredential);
 
-      console.log("User signed in:", userCredential.user);
+      console.log("User signed in:", userCredential?.user?._user);
+      const firebaseUser = userCredential.user?._user;
+
+      const LogedInUserData = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        photo: firebaseUser.photoURL,
+      };
+      await AsyncStorage.multiSet([
+        ['logedin', 'true'],
+        ['user', JSON.stringify(LogedInUserData)],
+      ]);
+
+      console.log("Firebase user:", firebaseUser);
 
       // 5. Store login status / user data
       await AsyncStorage.setItem("logedin", "true");
 
       // 6. Navigate
       navigation.replace("TabNavigation");
-      return userCredential;
+      // return userCredential;
     } catch (error) {
       console.error("Google Login error:", error);
     } finally {
       setGoogleBtnLoading(false);
     }
   };
-
-  const handleGoogleLogout = async () => {
-    try {
-      // Firebase sign out
-      await signOut(auth());
-
-      // Google sign out
-      await GoogleSignin.signOut();
-      await GoogleSignin.revokeAccess();
-      await AsyncStorage.removeItem("logedin");
-      console.log("User logged out successfully");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  // Sign up / Login
+  const handleEmailLogin = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) console.error(error);
+    return data.user;
   };
 
+
   const handleAppleLogin = async () => {
-    handleGoogleLogout();
     // console.log('Apple Login pressed')
     // await AsyncStorage.setItem('logedin', 'true');
     // navigation.navigate('TabNavigation')

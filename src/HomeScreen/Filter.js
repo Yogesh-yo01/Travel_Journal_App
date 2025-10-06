@@ -11,20 +11,26 @@ const Filter = ({ DateRange, Tags, filteredData, setFilteredData }) => {
     const handleSelect = (type, item) => {
         if (type === 'tags') {
             if (item.tag === 'All') {
-                // Reset tags if "All" is selected
-                setFilteredData({ ...filteredData, tags: ['All'] });
+                // If "All" is already selected, remove it; otherwise, select it
+                const isAllSelected = filteredData.tags.includes('All');
+                setFilteredData({
+                    ...filteredData,
+                    tags: isAllSelected ? [] : ['All'],
+                });
                 return;
             }
 
             const isTagSelected = filteredData.tags.includes(item.tag);
             setFilteredData({
                 ...filteredData,
+                // Remove 'All' if any other tag is selected
                 tags: isTagSelected
-                    ? filteredData.tags.filter(tag => tag !== item.tag) // Remove
-                    : [...filteredData.tags, item.tag], // Add
+                    ? filteredData.tags.filter(tag => tag !== item.tag)
+                    : [...filteredData.tags.filter(tag => tag !== 'All'), item.tag],
             });
             return;
         }
+        
 
         // For date range
         setFilteredData({ ...filteredData, [type]: item[type] });
