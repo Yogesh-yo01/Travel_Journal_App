@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "405631334017",
+    "project_id": "travel-journal-app-5bba4",
+    "storage_bucket": "travel-journal-app-5bba4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405631334017:android:2960b21054bbeb911d7f80",
+        "android_client_info": {
+          "package_name": "com.travel.journal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "405631334017-m0t6q4a72sja625kp4mk94hr623nru5m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.travel.journal",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "405631334017-m4o1im71gr3p6nps01hbl9meh919qqid.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.travel.journal",
+            "certificate_hash": "d20d8f10f4177cde2949fcf1e5c174f0ed643855"
+          }
+        },
+        {
+          "client_id": "405631334017-9ru195b994ghb3jodn6tepdgj63j475t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7xaynLzB4ZGCljRSfwf0t0Cmx7-Aeves"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "405631334017-9ru195b994ghb3jodn6tepdgj63j475t.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "405631334017-kff76154vkldj0q5h363lg900cg9bff2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.travel.journal"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

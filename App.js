@@ -11,13 +11,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import TabNavigation from './src/TabNavigation/TabNavigation';
 import AddNew from './src/HomeScreen/AddNew';
 
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import auth from '@react-native-firebase/auth';
+
+
 const Stack = createStackNavigator();
 const App = () => {
   const [splashVisible, setSplashVisible] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
   const [profileSetup, setProfilesetup] = useState(false);
-
+  GoogleSignin.configure({
+    webClientId: "405631334017-9ru195b994ghb3jodn6tepdgj63j475t.apps.googleusercontent.com", // from Firebase
+  });
   useEffect(() => {
     setTimeout(() => {
       setSplashVisible(false);
