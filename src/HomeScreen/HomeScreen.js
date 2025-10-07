@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/no-unstable-nested-components */
-import { FlatList, Image, RefreshControl, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, RefreshControl, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Colors, Fonts, Size } from '../Theme/Theme'
 import moment from 'moment'
@@ -162,6 +162,9 @@ const HomeScreen = ({ navigation }) => {
             const localJournals = await getOfflineJournalsByUser(user_id);
             setJournals(localJournals);
         }
+        finally {
+            setLoading(false);
+        }
     };
     // Fetch local journals on screen focus
     useFocusEffect(
@@ -253,52 +256,57 @@ const HomeScreen = ({ navigation }) => {
                         />}
                 </>
             }
-            <FlatList
-                data={displayedJournals}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={{ paddingTop: 20, paddingHorizontal: 16 }}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                    />
-                }
-                renderItem={({ item, index }) => (
-                    <TouchableOpacity onPress={() => handleJournalDetails(item)} style={styles.card}>
-                        <Image source={{ uri: item?.photos[0] }} style={styles.cardImage} />
-                        <View style={styles.cardContent}>
-                            <Text style={styles.itemTitle}>{item?.title || 'No Title'}</Text>
-                            <Text style={styles.itemDescription}>{item?.description || 'No Description'}</Text>
-                            <View style={styles.DatesContainer}>
-                                <View style={styles.Date}>
-                                    <DateIcon />
-                                    <Text style={styles.itemDescription}>{moment(item?.date).format('MMM D, YYYY')}</Text>
+            {loading ?
+                <View style={styles.ActivityIndicatorContainer}>
+                    <ActivityIndicator size={44} color={Colors.primary} />
+                </View>
+                :
+                <FlatList
+                    data={displayedJournals}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={{ paddingTop: 20, paddingHorizontal: 16 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                        />
+                    }
+                    renderItem={({ item, index }) => (
+                        <TouchableOpacity onPress={() => handleJournalDetails(item)} style={styles.card}>
+                            <Image source={{ uri: item?.photos[0] }} style={styles.cardImage} />
+                            <View style={styles.cardContent}>
+                                <Text style={styles.itemTitle}>{item?.title || 'No Title'}</Text>
+                                <Text style={styles.itemDescription}>{item?.description || 'No Description'}</Text>
+                                <View style={styles.DatesContainer}>
+                                    <View style={styles.Date}>
+                                        <DateIcon />
+                                        <Text style={styles.itemDescription}>{moment(item?.date).format('MMM D, YYYY')}</Text>
+                                    </View>
+                                    <View style={styles.Date}>
+                                        <LocationIcon />
+                                        <Text style={styles.itemDescription}>{item.location}</Text>
+                                    </View>
                                 </View>
-                                <View style={styles.Date}>
-                                    <LocationIcon />
-                                    <Text style={styles.itemDescription}>{item.location}</Text>
+                                <View style={styles.TagsContainer}>
+                                    {item.tags.map((tag, index) => (
+                                        <TouchableOpacity key={index} style={styles.tag}>
+                                            <Text style={styles.tagText}>{tag}</Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
                             </View>
-                            <View style={styles.TagsContainer}>
-                                {item.tags.map((tag, index) => (
-                                    <TouchableOpacity key={index} style={styles.tag}>
-                                        <Text style={styles.tagText}>{tag}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                        </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={() => (
+                        <View style={styles.EmptyContainer}>
+                            <EmptyIcon width={100} height={100} />
+                            <Text style={styles.EmptyText}>No journals found.</Text>
+                            <Text style={styles.EmptySubtitle}>
+                                You haven’t created any journals yet. Start by adding a new journal.
+                            </Text>
                         </View>
-                    </TouchableOpacity>
-                )}
-                ListEmptyComponent={() => (
-                    <View style={styles.EmptyContainer}>
-                        <EmptyIcon width={100} height={100} />
-                        <Text style={styles.EmptyText}>No journals found.</Text>
-                        <Text style={styles.EmptySubtitle}>
-                            You haven’t created any journals yet. Start by adding a new journal.
-                        </Text>
-                    </View>
-                )}
-            />
+                    )}
+                />}
             {/* <View style={styles.AddButtonContainer}>
             </View> */}
             <TouchableOpacity style={styles.AddButton} onPress={() => navigation.navigate('AddNew')}>
@@ -465,5 +473,11 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular,
         lineHeight: 20,
         textAlign: 'center',
+    },
+    ActivityIndicatorContainer: {
+        width: '100%',
+        marginTop:'20%',
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 })

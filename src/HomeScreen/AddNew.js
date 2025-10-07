@@ -6,7 +6,7 @@ import BackIcon from '../../assets/icon/backb.svg'
 import UploadIcon from '../../assets/icon/upload.svg'
 import RemoveIcon from '../../assets/icon/x.svg'
 import DateIcon from '../../assets/icon/date.svg'
-import AiIcon from '../../assets/login/ai.png'
+import StarsIcon from '../../assets/icon/stars.svg'
 import LocationIcon from '../../assets/icon/location.svg'
 
 
@@ -324,8 +324,8 @@ const AddNew = ({ navigation, route }) => {
                         />
                     </View>
                     {(journal === undefined && newJournalData.photos.length > 0) && <View style={styles.TagsLabelContainer}>
-                        <Text style={[styles.InputLabel,]}>Ai-Generated Tags</Text>
-                        <Image source={AiIcon} resizeMode="stretch" style={styles.AiIcon} />
+                        <StarsIcon/>
+                        <Text style={[styles.InputLabel, { marginRight: 5 }]}>Ai-Generated Tags</Text>
                     </View>}
                     {newJournalData.photos.length > 0 &&
                         <View style={styles.TagsContainer}>

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { Colors, Fonts, Size } from '../Theme/Theme'
 import GoogleLogo from '../../assets/login/google.png'
@@ -63,6 +63,7 @@ const Login = ({ navigation }) => {
 
 
   const handleAppleLogin = async () => {
+    handleGoogleLogin()
     // console.log('Apple Login pressed')
     // await AsyncStorage.setItem('logedin', 'true');
     // navigation.navigate('TabNavigation')
@@ -80,10 +81,11 @@ const Login = ({ navigation }) => {
             <Image source={GoogleLogo} style={styles.GoogleLogo} />
             {googleBtnLoading ? <ActivityIndicator color={Colors.gray} size={20} /> : <Text style={styles.GoogleText}>Continue with Google</Text>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.AppleButton} onPress={handleAppleLogin}>
-            <Image source={AppleLogo} style={styles.AppleLogo} />
-            <Text style={styles.AppleText}>Continue with Apple</Text>
-          </TouchableOpacity>
+          {Platform.OS === 'ios' &&
+            <TouchableOpacity style={styles.AppleButton} onPress={handleAppleLogin}>
+              <Image source={AppleLogo} style={styles.AppleLogo} />
+              <Text style={styles.AppleText}>Continue with Apple</Text>
+            </TouchableOpacity>}
 
           <Text style={styles.footerNote}>
             By continuing, you agree to our Terms & Privacy Policy
@@ -116,6 +118,7 @@ const styles = StyleSheet.create({
     fontSize: Size.md_16,
     color: Colors.gray,
     fontFamily: Fonts.mediumAS,
+    marginTop: 10,
   },
   LoginContainer: {
     width: '100%',
