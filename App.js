@@ -12,10 +12,8 @@ import TabNavigation from './src/TabNavigation/TabNavigation';
 import AddNew from './src/HomeScreen/AddNew';
 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import auth from '@react-native-firebase/auth';
 import { initDB } from './src/DB/database';
 import JournalDetails from './src/HomeScreen/JournalDetails';
-
 
 const Stack = createStackNavigator();
 const App = () => {

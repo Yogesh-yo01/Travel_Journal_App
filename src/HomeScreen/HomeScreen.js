@@ -17,11 +17,11 @@ import EmptyIcon from '../../assets/icon/empty.svg'
 import NetInfo from '@react-native-community/netinfo';
 import Filter from './Filter'
 import { getOfflineJournals, getOfflineJournalsByUser, updateJournalSync } from '../DB/database'
-import { supabase } from '../DB/supabaseClient'
 import { syncJournals } from '../DB/sync'
 import Toast from 'react-native-simple-toast'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from '@react-navigation/native'
+import { supabase } from '../DB/supabaseClient'
 
 const HomeScreen = ({ navigation }) => {
     const [allJournals, setAllJournals] = useState([]); // full data from DB
@@ -38,60 +38,58 @@ const HomeScreen = ({ navigation }) => {
     const [journals, setJournals] = useState([])
 
     const DateRange = [
-        { range: 'All' },
-        { range: 'Today' },
-        { range: 'This Week' },
-        { range: 'This Month' },
-        { range: 'This Year' },
-    ]
-    // Extract all tags dynamically if you already have journals stored
-    const allJournalTags = journals.reduce((acc, journal) => {
-        journal.tags.forEach(tag => {
-            if (!acc.includes(tag)) acc.push(tag);
-        });
-        return acc;
-    }, []);
-
-    // Prepare the Tags array for the filter
-    const Tags = [
-        { tag: 'All' },
-        ...allJournalTags.map(tag => ({ tag })),
+        { range: 'All' }, { range: 'Today' }, { range: 'This Week' },
+        { range: 'This Month' }, { range: 'This Year' }
     ];
 
+    // Extract tags for filter
+    const Tags = [
+        { tag: 'All' },
+        ...journals.reduce((acc, j) => {
+            j.tags.forEach(tag => { if (!acc.includes(tag)) acc.push(tag); });
+            return acc;
+        }, [])
+            .map(tag => ({ tag })),
+    ];
+
+    // ------------------ Apply search + filter ------------------
     const applyFilters = () => {
-        let filtered = [...journals]; // start from your stored journals
+        let filtered = [...journals];
 
-        // Filter by search text (title & description)
+        // Search filter
         if (searchText.trim() !== '') {
-            const lowerText = searchText.toLowerCase();
-            filtered = filtered.filter(journal =>
-                journal.title.toLowerCase().includes(lowerText) ||
-                journal.description.toLowerCase().includes(lowerText)
+            const lower = searchText.toLowerCase();
+            filtered = filtered.filter(j =>
+                j.title.toLowerCase().includes(lower) || j.description.toLowerCase().includes(lower)
             );
         }
 
-        // Filter by tags
-        if (filteredData.tags && filteredData.tags.length > 0 && !filteredData.tags.includes('All')) {
-            filtered = filtered.filter(journal =>
-                journal.tags.some(tag => filteredData.tags.includes(tag))
-            );
+        // Tag filter
+        if (filteredData.tags.length > 0 && !filteredData.tags.includes('All')) {
+            filtered = filtered.filter(j => j.tags.some(tag => filteredData.tags.includes(tag)));
         }
 
-        // Filter by date range
+        // Date filter
         if (filteredData.range && filteredData.range !== 'All') {
             const now = new Date();
-            filtered = filtered.filter(journal => {
-                const journalDate = new Date(Number(journal.date)); // convert timestamp
-                if (filteredData.range === 'Today') {
-                    return journalDate.toDateString() === now.toDateString();
-                } else if (filteredData.range === 'Yesterday') {
+            filtered = filtered.filter(j => {
+                const journalDate = new Date(j.date);
+                if (filteredData.range === 'Today') return journalDate.toDateString() === now.toDateString();
+                if (filteredData.range === 'Yesterday') {
                     const yesterday = new Date();
                     yesterday.setDate(now.getDate() - 1);
                     return journalDate.toDateString() === yesterday.toDateString();
-                } else if (filteredData.range === 'Last 7 Days') {
+                }
+                if (filteredData.range === 'This Week') {
                     const weekAgo = new Date();
                     weekAgo.setDate(now.getDate() - 7);
                     return journalDate >= weekAgo && journalDate <= now;
+                }
+                if (filteredData.range === 'This Month') {
+                    return journalDate.getMonth() === now.getMonth() && journalDate.getFullYear() === now.getFullYear();
+                }
+                if (filteredData.range === 'This Year') {
+                    return journalDate.getFullYear() === now.getFullYear();
                 }
                 return true;
             });
@@ -99,46 +97,70 @@ const HomeScreen = ({ navigation }) => {
 
         setDisplayedJournals(filtered);
     };
+
     useEffect(() => {
         applyFilters();
     }, [searchText, filteredData, journals]);
 
-    const GetJournalData = async () => {
+    // ------------------ Fetch local journals ------------------
+    const fetchLocalData = async () => {
         try {
             const user = JSON.parse(await AsyncStorage.getItem('user'));
             const user_id = user?.uid;
 
-            const journals = await getOfflineJournalsByUser(user_id);
-            console.log('User journals:', journals);
-            setJournals(journals);
-        } catch (error) {
-            console.error('Error fetching journals:', error);
+            const localJournals = await getOfflineJournalsByUser(user_id);
+
+            // Remove duplicates just in case
+            const uniqueJournals = Object.values(
+                (localJournals || []).reduce((acc, j) => {
+                    acc[j.id] = j;
+                    return acc;
+                }, {})
+            );
+            console.log('Fetched local journals:', uniqueJournals);
+            setJournals(uniqueJournals);
+        } catch (err) {
+            console.error('Fetch local journals error:', err);
         }
     };
-    useFocusEffect(useCallback(() => {
-        GetJournalData();
-    }, []))
+
+    // Fetch local journals on screen focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchLocalData();
+        }, [])
+    );
+    // ------------------ Manual Refresh / Sync ------------------
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            const state = await NetInfo.fetch();
+            const user = JSON.parse(await AsyncStorage.getItem('user'));
+            const user_id = user?.uid;
+
+            if (state.isConnected) {
+                // Sync unsynced journals to Supabase
+                await syncJournals(user_id);
+                Toast.show('Journals synced with Supabase.');
+            } else {
+                Toast.show('No internet connection. Journals remain local.');
+            }
+
+            // Reload local journals after sync
+            await fetchLocalData();
+        } catch (err) {
+            console.error('Refresh / Sync error:', err);
+            Toast.show('Error refreshing journals.');
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const handleBack = () => {
         setIsSearchVisible(false)
         setIsFilterVisible(false);
     }
-    const handleRefreshToSync = async () => {
-        const state = await NetInfo.fetch();
-        // Check if online
-        if (state.isConnected) {
-            // Sync with Supabase
-            const user = JSON.parse(await AsyncStorage.getItem('user'));
-            const user_id = user?.uid;
 
-            await syncJournals(user_id);
-            Toast.show('Journals synced with Supabase.');
-        } else {
-            // Handle offline case
-            Toast.show('No internet connection. Journal saved locally.');
-            console.log('No internet connection. Journal saved locally.');
-        }
-    };
     const handleJournalDetails = (journal) => {
         navigation.navigate('JournalDetails', { journal });
     };
@@ -195,7 +217,7 @@ const HomeScreen = ({ navigation }) => {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={handleRefreshToSync}
+                        onRefresh={handleRefresh}
                     />
                 }
                 renderItem={({ item, index }) => (

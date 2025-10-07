@@ -7,7 +7,7 @@ import AppleLogo from '../../assets/login/apple.png'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth, { signOut } from "@react-native-firebase/auth";
-import { supabase } from '../DB/supabaseClient'
+// import { supabase } from '../DB/supabaseClient'
 
 const Login = ({ navigation }) => {
   const [googleBtnLoading, setGoogleBtnLoading] = useState(false);
@@ -54,12 +54,12 @@ const Login = ({ navigation }) => {
       setGoogleBtnLoading(false);
     }
   };
-  // Sign up / Login
-  const handleEmailLogin = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) console.error(error);
-    return data.user;
-  };
+  // // Sign up / Login
+  // const handleEmailLogin = async (email, password) => {
+  //   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  //   if (error) console.error(error);
+  //   return data.user;
+  // };
 
 
   const handleAppleLogin = async () => {

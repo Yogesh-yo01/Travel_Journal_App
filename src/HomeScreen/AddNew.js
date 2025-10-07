@@ -21,7 +21,6 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import NetInfo from '@react-native-community/netinfo';
 // import uuid from 'react-native-uuid';
 import { insertJournal, updateJournal, updateJournalSync } from '../DB/database'
-import { supabase } from '../DB/supabaseClient'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const AddNew = ({ navigation, route }) => {
