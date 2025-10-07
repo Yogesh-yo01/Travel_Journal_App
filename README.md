@@ -33,11 +33,10 @@ This app allows users to:
 ## Features
 
 - **Offline Storage:** Journals are saved in local SQLite database.  
-- **Online Sync:** Journals are synced with Supabase if internet is available.  
+- **Online Sync:** Pull down to sync unsynced journals with Supabase when internet is available.  
 - **AI Tag Generation:** Automatic tags for uploaded images using Clarifai API.  
 - **Search & Filter:** Search journals by title/description and filter by tags/date.  
 - **Media Support:** Upload up to 5 images per journal and view in full screen.  
-- **Location Picker:** Google Places API integrated for adding locations.  
 
 ---
 
@@ -45,9 +44,7 @@ This app allows users to:
 
 You can download the working APK from the link below:
 
-[Download APK](https://<your-apk-link>)  
-
-> Replace `<your-apk-link>` with the actual link to your APK file (e.g., Google Drive, GitHub Release).
+[Download APK](https://drive.google.com/drive/folders/1EaGKFv450GDQ43zQg587UdhTANpA2J6I?usp=sharing)  
 
 ---
 
@@ -55,27 +52,5 @@ You can download the working APK from the link below:
 
 Watch the demo of the working application here:
 
-[View Demo](https://<your-loom-link>)  
+[View Demo](https://drive.google.com/drive/folders/1lZZbJ-YAfRXFChvH2eujT82oyQ74Cvhg?usp=sharing)  
 
-> Replace `<your-loom-link>` with the actual link to your Loom or demo video.
-
----
-
-## Setup & Installation
-
-### Prerequisites
-
-- Node.js >= 18.x  
-- npm >= 9.x  
-- React Native CLI  
-- Android Studio or Xcode (for running on emulator/device)  
-- Google Maps API Key (for location autocomplete)  
-- Supabase account and project  
-
-### Steps
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/Yogesh-yo01/Travel_Journal_App.git
-cd Travel_Journal_App
