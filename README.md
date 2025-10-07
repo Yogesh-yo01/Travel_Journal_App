@@ -77,5 +77,5 @@ Watch the demo of the working application here:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/Yogesh-yo01/Travel_Journal_App.git
+cd Travel_Journal_App
