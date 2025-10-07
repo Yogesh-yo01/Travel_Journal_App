@@ -1,97 +1,81 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Travel Journal App
 
-# Getting Started
+A React Native mobile application to record, manage, and sync travel journals. Users can create journals with photos, locations, dates, and tags. Journals are stored locally in SQLite and synchronized with Supabase for online access.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## Table of Contents
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- [Demo](#demo)  
+- [Features](#features)  
+- [APK Download](#apk-download)  
+- [Loom Video](#loom-video)  
+- [Setup & Installation](#setup--installation)  
+- [Folder Structure](#folder-structure)  
+- [Assumptions](#assumptions)  
+- [Tech Stack](#tech-stack)  
+- [Notes](#notes)  
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+---
 
-```sh
-# Using npm
-npm start
+## Demo
 
-# OR using Yarn
-yarn start
-```
+This app allows users to:
 
-## Step 2: Build and run your app
+- Add, edit, and delete journals with title, description, location, tags, date, and photos.  
+- Automatically generate AI-based tags from uploaded images.  
+- View journals offline and online with synchronization to Supabase.  
+- Filter journals by date range and tags.  
+- Interactive gallery to view images attached to journals.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+---
 
-### Android
+## Features
 
-```sh
-# Using npm
-npm run android
+- **Offline Storage:** Journals are saved in local SQLite database.  
+- **Online Sync:** Journals are synced with Supabase if internet is available.  
+- **AI Tag Generation:** Automatic tags for uploaded images using Clarifai API.  
+- **Search & Filter:** Search journals by title/description and filter by tags/date.  
+- **Media Support:** Upload up to 5 images per journal and view in full screen.  
+- **Location Picker:** Google Places API integrated for adding locations.  
 
-# OR using Yarn
-yarn android
-```
+---
 
-### iOS
+## APK Download
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+You can download the working APK from the link below:
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+[Download APK](https://<your-apk-link>)  
 
-```sh
-bundle install
-```
+> Replace `<your-apk-link>` with the actual link to your APK file (e.g., Google Drive, GitHub Release).
 
-Then, and every time you update your native dependencies, run:
+---
 
-```sh
-bundle exec pod install
-```
+## Loom Video
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+Watch the demo of the working application here:
 
-```sh
-# Using npm
-npm run ios
+[View Demo](https://<your-loom-link>)  
 
-# OR using Yarn
-yarn ios
-```
+> Replace `<your-loom-link>` with the actual link to your Loom or demo video.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Setup & Installation
 
-## Step 3: Modify your app
+### Prerequisites
 
-Now that you have successfully run the app, let's make changes!
+- Node.js >= 18.x  
+- npm >= 9.x  
+- React Native CLI  
+- Android Studio or Xcode (for running on emulator/device)  
+- Google Maps API Key (for location autocomplete)  
+- Supabase account and project  
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### Steps
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+1. Clone the repository:
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+```bash
+git clone https://github.com/<your-username>/<repo-name>.git
+cd <repo-name>
