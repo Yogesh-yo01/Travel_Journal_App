@@ -23,6 +23,9 @@ import NetInfo from '@react-native-community/netinfo';
 import { insertJournal, updateJournal, updateJournalSync } from '../DB/database'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+import Toast from 'react-native-simple-toast'
+import { supabase } from '../DB/supabaseClient'
+
 const AddNew = ({ navigation, route }) => {
     const { journal } = route.params || {};
 
@@ -31,7 +34,7 @@ const AddNew = ({ navigation, route }) => {
         title: journal?.title || '',
         description: journal?.description || '',
         photos: journal?.photos || [],
-        date: new Date().getTime(),
+        date: new Date().toISOString(),
         location: journal?.location || searchText || '',
         tags: journal?.tags || [],
     });
@@ -140,37 +143,105 @@ const AddNew = ({ navigation, route }) => {
                 : [...newJournalData.tags, tag],
         });
     }
+    // const saveJournal = async () => {
+    //     const user = JSON.parse(await AsyncStorage.getItem('user'));
+    //     const user_id = user?.uid;
+    //     const journalData = {
+    //         ...newJournalData,
+    //         id: journal?.id || Date.now().toString(),
+    //         user_id,
+    //         synced: false
+    //     };
+
+    //     if (journal) {
+    //         // Update existing journal
+    //         await updateJournal(journalData);
+
+    //     } else {
+    //         // Insert new journal
+    //         await insertJournal(journalData);
+    //     }
+
+    //     // Clear form & go back
+    //     setNewJournalData({
+    //         title: '',
+    //         description: '',
+    //         photos: [],
+    //         location: null,
+    //         tags: [],
+    //     });
+    //     if (journal) {
+    //         navigation.navigate('TabNavigation',);
+    //     } else {
+    //         navigation.goBack();
+    //     }
+    // };
+
     const saveJournal = async () => {
-        const user = JSON.parse(await AsyncStorage.getItem('user'));
-        const user_id = user?.uid;
-        const journalData = {
-            ...newJournalData,
-            id: journal?.id || Date.now().toString(),
-            user_id,
-            synced: false
-        };
+        try {
+            const user = JSON.parse(await AsyncStorage.getItem('user'));
+            const user_id = user?.uid;
+            const journalData = {
+                ...newJournalData,
+                id: journal?.id || Date.now().toString(),
+                user_id,
+                synced: false, // default, will update if online
+            };
 
-        if (journal) {
-            // Update existing journal
-            await updateJournal(journalData);
+            const netState = await NetInfo.fetch();
 
-        } else {
-            // Insert new journal
-            await insertJournal(journalData);
-        }
+            if (netState.isConnected && user_id) {
+                const journalDataToSend = {
+                    ...journalData,
+                    date: new Date(journalData.date).toISOString(), // convert to ISO
+                    synced: true,
+                };
 
-        // Clear form & go back
-        setNewJournalData({
-            title: '',
-            description: '',
-            photos: [],
-            location: null,
-            tags: [],
-        });
-        if (journal) {
-            navigation.navigate('TabNavigation',);
-        } else {
-            navigation.goBack();
+                if (journal) {
+                    const { error } = await supabase
+                        .from('journals')
+                        .update(journalDataToSend)
+                        .eq('id', journalData.id)
+                        .eq('user_id', user_id);
+
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase
+                        .from('journals')
+                        .insert([journalDataToSend]);
+                    if (error) throw error;
+                }
+
+                journalData.synced = true;
+            }
+
+
+            // ------------------ Offline / Local ------------------
+            if (journal) {
+                await updateJournal(journalData);
+            } else {
+                await insertJournal(journalData);
+            }
+
+            Toast.show(journal ? 'Journal updated' : 'Journal added');
+
+            // Clear form & navigate
+            setNewJournalData({
+                title: '',
+                description: '',
+                photos: [],
+                location: null,
+                tags: [],
+            });
+            if (journal) {
+                navigation.navigate('TabNavigation', { screen: 'JournalDetails', params: { journal: journalData } });
+            } else {
+                navigation.goBack();
+            }
+
+        } catch (err) {
+            console.error('❌ Save journal error:', err);
+            Toast.show('Error saving journal');
         }
     };
 

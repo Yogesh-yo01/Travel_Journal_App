@@ -21,6 +21,7 @@ export const initDB = async () => {
       synced INTEGER
     );
   `);
+
     // ✅ Check if 'user_id' column exists, add if missing
     const result = await db.executeSql(`PRAGMA table_info(journals);`);
     const columns = result[0].rows.raw().map((col) => col.name);
@@ -33,14 +34,19 @@ export const initDB = async () => {
     return db;
 };
 
+// ------------------ INSERT JOURNAL ------------------
+// Updated to prevent UNIQUE constraint error
 export const insertJournal = async (journal) => {
     const { id, user_id, title, description, photos, date, location, tags, synced } = journal;
     await db.executeSql(
-        `INSERT INTO journals (id, user_id, title, description, photos, date, location, tags, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, user_id, title, description, JSON.stringify(photos), date, location, JSON.stringify(tags), synced ? 1 : 0]
+        `INSERT OR REPLACE INTO journals 
+         (id, user_id, title, description, photos, date, location, tags, synced)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, user_id, title, description, JSON.stringify(photos || []), date, location, JSON.stringify(tags || []), synced ? 1 : 0]
     );
 };
 
+// ------------------ FETCH ALL ------------------
 export const getOfflineJournals = async () => {
     const results = await db.executeSql(`SELECT * FROM journals ORDER BY date DESC`);
     const journals = [];
@@ -49,14 +55,16 @@ export const getOfflineJournals = async () => {
             const row = result.rows.item(i);
             journals.push({
                 ...row,
-                photos: JSON.parse(row.photos),
-                tags: JSON.parse(row.tags),
+                photos: JSON.parse(row.photos || "[]"),
+                tags: JSON.parse(row.tags || "[]"),
                 synced: row.synced === 1
             });
         }
     });
     return journals;
 };
+
+// ------------------ FETCH BY USER ------------------
 export const getOfflineJournalsByUser = async (user_id) => {
     const results = await db.executeSql(`SELECT * FROM journals WHERE user_id = ? ORDER BY date DESC`, [user_id]);
     const journals = [];
@@ -65,8 +73,8 @@ export const getOfflineJournalsByUser = async (user_id) => {
             const row = result.rows.item(i);
             journals.push({
                 ...row,
-                photos: JSON.parse(row.photos),
-                tags: JSON.parse(row.tags),
+                photos: JSON.parse(row.photos || "[]"),
+                tags: JSON.parse(row.tags || "[]"),
                 synced: row.synced === 1
             });
         }
@@ -74,13 +82,16 @@ export const getOfflineJournalsByUser = async (user_id) => {
     return journals;
 };
 
+// ------------------ UPDATE SYNC ------------------
 export const updateJournalSync = async (id) => {
     await db.executeSql(`UPDATE journals SET synced = 1 WHERE id = ?`, [id]);
 };
+
+// ------------------ UPDATE JOURNAL ------------------
 export const updateJournal = async (journalData) => {
     const { id, title, description, photos, date, location, tags, synced } = journalData;
-    const photosJson = JSON.stringify(photos);
-    const tagsJson = JSON.stringify(tags);
+    const photosJson = JSON.stringify(photos || []);
+    const tagsJson = JSON.stringify(tags || []);
     const dateStr = date instanceof Date ? date.getTime() : date;
 
     await db.executeSql(
@@ -88,7 +99,8 @@ export const updateJournal = async (journalData) => {
         [title, description, photosJson, dateStr, location, tagsJson, synced ? 1 : 0, id]
     );
 };
-  
+
+// ------------------ DELETE JOURNAL ------------------
 export const deleteJournal = (id) => {
     return new Promise((resolve, reject) => {
         db.transaction(tx => {
@@ -100,4 +112,4 @@ export const deleteJournal = (id) => {
             );
         });
     });
-  };
+};

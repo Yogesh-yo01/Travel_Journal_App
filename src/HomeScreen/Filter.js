@@ -5,7 +5,7 @@ import DateIcon from '../../assets/icon/calendargrey.svg'
 import LocationIcon from '../../assets/icon/location.svg'
 import ButtonComponent from '../Component/ButtonComponent'
 
-const Filter = ({ DateRange, Tags, filteredData, setFilteredData }) => {
+const Filter = ({ DateRange, Tags, filteredData, setFilteredData, setIsSearchVisible, setSearchText }) => {
 
 
     const handleSelect = (type, item) => {
@@ -34,6 +34,14 @@ const Filter = ({ DateRange, Tags, filteredData, setFilteredData }) => {
 
         // For date range
         setFilteredData({ ...filteredData, [type]: item[type] });
+    };
+    const handleClear = () => {
+        setFilteredData({
+            range: '',
+            tags: [],
+        });
+        setIsSearchVisible(false)
+        setSearchText('')
     };
 
     return (
@@ -90,7 +98,8 @@ const Filter = ({ DateRange, Tags, filteredData, setFilteredData }) => {
             <View style={styles.Button}>
                 <ButtonComponent
                     text="Clear All Filters"
-                    onPress={() => setFilteredData({ range: '', tags: [] })}
+                    // onPress={() => setFilteredData({ range: '', tags: [] })}
+                    onPress={handleClear}
                     disabled={false}
                     loading={false}
                 />

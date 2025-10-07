@@ -16,7 +16,7 @@ import EmptyIcon from '../../assets/icon/empty.svg'
 
 import NetInfo from '@react-native-community/netinfo';
 import Filter from './Filter'
-import { getOfflineJournals, getOfflineJournalsByUser, updateJournalSync } from '../DB/database'
+import { getOfflineJournals, getOfflineJournalsByUser, insertJournal, updateJournalSync } from '../DB/database'
 import { syncJournals } from '../DB/sync'
 import Toast from 'react-native-simple-toast'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -24,7 +24,6 @@ import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../DB/supabaseClient'
 
 const HomeScreen = ({ navigation }) => {
-    const [allJournals, setAllJournals] = useState([]); // full data from DB
     const [displayedJournals, setDisplayedJournals] = useState([]); // filtered view
     const [isSearchVisible, setIsSearchVisible] = useState(false)
     const [isFilterVisible, setIsFilterVisible] = useState(false)
@@ -103,31 +102,72 @@ const HomeScreen = ({ navigation }) => {
     }, [searchText, filteredData, journals]);
 
     // ------------------ Fetch local journals ------------------
-    const fetchLocalData = async () => {
+    const fetchJournals = async () => {
         try {
             const user = JSON.parse(await AsyncStorage.getItem('user'));
             const user_id = user?.uid;
+            if (!user_id) return;
 
+            const netState = await NetInfo.fetch();
+
+            // 1️⃣ Get local journals
             const localJournals = await getOfflineJournalsByUser(user_id);
 
-            // Remove duplicates just in case
-            const uniqueJournals = Object.values(
-                (localJournals || []).reduce((acc, j) => {
-                    acc[j.id] = j;
-                    return acc;
-                }, {})
-            );
-            console.log('Fetched local journals:', uniqueJournals);
-            setJournals(uniqueJournals);
+            if (netState.isConnected) {
+                console.log("🌐 Online: fetching from Supabase...");
+
+                const { data: onlineJournals, error } = await supabase
+                    .from("journals")
+                    .select("*")
+                    .eq("user_id", user_id)
+                    .order("date", { ascending: false });
+
+                if (error) throw error;
+
+                // 2️⃣ Merge online journals with unsynced local journals
+                const unsyncedLocal = localJournals.filter(j => !j.synced);
+                const mergedJournals = [...onlineJournals, ...unsyncedLocal];
+
+                // 3️⃣ Remove duplicates by ID (keep online version if exists)
+                const uniqueJournals = Object.values(
+                    mergedJournals.reduce((acc, j) => {
+                        acc[j.id] = j;
+                        return acc;
+                    }, {})
+                );
+
+                console.log("Merged journals:", uniqueJournals);
+
+                // 4️⃣ Save online journals to local DB (overwrite existing)
+                for (const j of onlineJournals) {
+                    await insertJournal({
+                        ...j,
+                        photos: j.photos || [],
+                        tags: j.tags || [],
+                        synced: true,
+                    });
+                }
+
+                setJournals(uniqueJournals);
+            } else {
+                // Offline: show local journals only
+                console.log("📴 Offline: loading local journals only");
+                setJournals(localJournals);
+            }
         } catch (err) {
-            console.error('Fetch local journals error:', err);
+            console.error("❌ Fetch journals error:", err.message);
+            // fallback to local journals
+            const user = JSON.parse(await AsyncStorage.getItem('user'));
+            const user_id = user?.uid;
+            const localJournals = await getOfflineJournalsByUser(user_id);
+            setJournals(localJournals);
         }
     };
-
     // Fetch local journals on screen focus
     useFocusEffect(
         useCallback(() => {
-            fetchLocalData();
+            // fetchLocalData();
+            fetchJournals();
         }, [])
     );
     // ------------------ Manual Refresh / Sync ------------------
@@ -147,7 +187,8 @@ const HomeScreen = ({ navigation }) => {
             }
 
             // Reload local journals after sync
-            await fetchLocalData();
+            // await fetchLocalData();
+            await fetchJournals();
         } catch (err) {
             console.error('Refresh / Sync error:', err);
             Toast.show('Error refreshing journals.');
@@ -206,6 +247,8 @@ const HomeScreen = ({ navigation }) => {
                             DateRange={DateRange}
                             filteredData={filteredData}
                             setFilteredData={setFilteredData}
+                            setIsSearchVisible={setIsSearchVisible}
+                            setSearchText={setSearchText}
                             Tags={Tags}
                         />}
                 </>
@@ -229,7 +272,7 @@ const HomeScreen = ({ navigation }) => {
                             <View style={styles.DatesContainer}>
                                 <View style={styles.Date}>
                                     <DateIcon />
-                                    <Text style={styles.itemDescription}>{moment(Number(item?.date)).format('MMM D, YYYY')}</Text>
+                                    <Text style={styles.itemDescription}>{moment(item?.date).format('MMM D, YYYY')}</Text>
                                 </View>
                                 <View style={styles.Date}>
                                     <LocationIcon />
@@ -277,7 +320,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         backgroundColor: Colors.white_fffff,
         paddingTop: 42,
-        paddingBottom: 20,
+        paddingBottom: 15,
         paddingLeft: 16,
         paddingRight: 20,
         alignItems: 'center',
@@ -304,7 +347,7 @@ const styles = StyleSheet.create({
     HeaderTitle: {
         color: Colors.primary_text_1B2436,
         fontSize: Size.md_20,
-        fontFamily: Fonts.medium,
+        fontFamily: Fonts.semiBold,
     },
     SearchContainer: {
         width: "100%",
@@ -366,6 +409,7 @@ const styles = StyleSheet.create({
         gap: 20,
     },
     Date: {
+        width: "50%",
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',

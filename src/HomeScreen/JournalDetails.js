@@ -15,6 +15,8 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import DeleteModal from './DeleteModal';
 import { deleteJournal } from '../DB/database';
 import Toast from 'react-native-simple-toast'
+import NetInfo from '@react-native-community/netinfo';
+import { supabase } from '../DB/supabaseClient';
 
 const JournalDetails = ({ navigation, route }) => {
     const { journal } = route.params || {};
@@ -28,14 +30,31 @@ const JournalDetails = ({ navigation, route }) => {
     };
     const handleDelete = async () => {
         try {
+            // 1️⃣ Delete from Supabase if online and user_id exists
+            const netState = await NetInfo.fetch();
+            if (netState.isConnected && journal.user_id) {
+                const { error } = await supabase
+                    .from("journals")
+                    .delete()
+                    .eq("id", journal.id)
+                    .eq("user_id", journal.user_id);
+                if (error) throw error;
+                console.log("✅ Journal deleted from Supabase");
+            }
+
+            // 2️⃣ Delete locally from SQLite
             await deleteJournal(journal.id);
             Toast.show("Journal deleted successfully");
+
+            // 3️⃣ Close modal & go back
             setDeleteVisible(false);
             navigation.goBack();
         } catch (error) {
-            console.error('Error deleting journal:', error);
+            console.error("❌ Error deleting journal:", error);
+            Toast.show("Error deleting journal");
         }
     };
+    
     return (
         <View style={styles.container}>
             <KeyboardAwareScrollView>
@@ -61,11 +80,11 @@ const JournalDetails = ({ navigation, route }) => {
                     <View style={styles.DatesContainer}>
                         <View style={styles.Date}>
                             <DateIcon />
-                            <Text style={styles.itemDescription}>{moment(Number(journal?.date)).format('MMM D, YYYY')}</Text>
+                            <Text style={styles.itemDescription}>{moment(journal?.date).format('MMM D, YYYY')}</Text>
                         </View>
                         <View style={styles.Date}>
                             <TimeIcon />
-                            <Text style={styles.itemDescription}>{moment(Number(journal?.date)).format('h:mm A')}</Text>
+                            <Text style={styles.itemDescription}>{moment(journal?.date).format('h:mm A')}</Text>
                         </View>
                     </View>
                     <View style={styles.Date}>

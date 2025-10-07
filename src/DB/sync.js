@@ -31,7 +31,7 @@ export const syncJournals = async (userId) => {
                         title: j.title,
                         description: j.description,
                         photos: j.photos,
-                        date: new Date(Number(j.date)).toISOString(),
+                        date: new Date(j.date).toISOString(),
                         location: j.location,
                         tags: j.tags,
                         synced: true,
