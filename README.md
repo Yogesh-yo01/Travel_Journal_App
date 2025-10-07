@@ -9,7 +9,7 @@ A React Native mobile application to record, manage, and sync travel journals. U
 - [Demo](#demo)  
 - [Features](#features)  
 - [APK Download](#apk-download)  
-- [Loom Video](#loom-video)  
+- [Demo Video](#Demo-video)  
 - [Setup & Installation](#setup--installation)  
 - [Folder Structure](#folder-structure)  
 - [Assumptions](#assumptions)  
@@ -48,7 +48,7 @@ You can download the working APK from the link below:
 
 ---
 
-## Loom Video
+## Demo Video
 
 Watch the demo of the working application here:
 
